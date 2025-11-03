@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
 
       // Redirigir según el rol
       if (userResp.role === "admin") {
-        router.push("/admin");
+        router.push("/admin/users");
       } else {
         router.push("/cliente");
       }

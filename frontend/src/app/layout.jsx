@@ -1,5 +1,5 @@
 import { AuthProvider } from "./context/AuthContext";
-
+import "../../src/styles/tailwind.css";
 
 export const metadata = {
   title: "Distribuidora DHM",

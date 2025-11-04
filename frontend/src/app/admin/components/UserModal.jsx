@@ -8,6 +8,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
     email: user?.email || "",
     password: "",
     listNumber: user?.listNumber || "",
+    role: user?.role || "cliente", 
   });
 
   const handleChange = (e) => {
@@ -18,22 +19,25 @@ export default function UserModal({ user, onClose, onUserChange }) {
     e.preventDefault();
     try {
       if (user) {
-       
-        await axios.put(`http://localhost:3001/admin/user/${user.id_User}/list`, {
-          listNumber: form.listNumber,
-        });
+        // Actualiza lista si es cliente
+        if (form.role === "cliente") {
+          await axios.put(
+            `http://localhost:3001/admin/user/${user.id_User}/list`,
+            { listNumber: form.listNumber }
+          );
+        }
       } else {
-       
+        // Crea usuario nuevo
         await axios.post("http://localhost:3001/admin/user", form);
       }
-      onUserChange(); 
-      onClose(); 
+
+      onUserChange();
+      onClose();
     } catch (error) {
       console.error(error);
       alert("Error al guardar el usuario");
     }
   };
-  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -43,6 +47,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Nombre
@@ -58,6 +63,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
             />
           </div>
 
+          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Email
@@ -73,6 +79,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
             />
           </div>
 
+          {/* Contraseña (solo al crear) */}
           {!user && (
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -89,18 +96,37 @@ export default function UserModal({ user, onClose, onUserChange }) {
             </div>
           )}
 
+          {/* Rol */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Lista de precios
+              Rol
             </label>
-            <input
-              type="number"
-              name="listNumber"
-              value={form.listNumber}
+            <select
+              name="role"
+              value={form.role}
               onChange={handleChange}
               className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-300"
-            />
+            >
+              <option value="cliente">Cliente</option>
+              <option value="admin">Administrador</option>
+            </select>
           </div>
+
+          {/* Lista de precios (solo si es cliente) */}
+          {form.role === "cliente" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Lista de precios
+              </label>
+              <input
+                type="number"
+                name="listNumber"
+                value={form.listNumber}
+                onChange={handleChange}
+                className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-300"
+              />
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2 mt-6">
             <button

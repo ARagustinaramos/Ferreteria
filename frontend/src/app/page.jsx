@@ -4,18 +4,40 @@ import { useRouter } from "next/navigation";
 
 export default function Page() {
   const router = useRouter();
-  const [user, setUser] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    // Simulación simple de login
-    if (user === "martina" && password === "1234") {
-      // Redirige a /home y pasa el nombre del usuario
-      router.push(`/home?name=${encodeURIComponent(user)}`);
-    } else {
-      alert("Usuario o contraseña incorrectos");
+    try {
+      const res = await fetch("http://localhost:3001/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Usuario o contraseña incorrectos");
+      }
+
+      // Guardamos token opcionalmente
+      localStorage.setItem("token", data.token);
+
+      // Redirección según el rol
+      if (data.user.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push(`/home?name=${encodeURIComponent(data.user.name)}`);
+      }
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,14 +61,15 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Formulario */}
+        {/* Formulario de login real */}
         <form onSubmit={handleLogin} className="flex flex-col mt-6 space-y-2">
           <input
-            type="text"
-            placeholder="Usuario"
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="border border-red-500 px-2 py-1 rounded-md text-center"
+            required
           />
           <input
             type="password"
@@ -54,12 +77,14 @@ export default function Page() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="border border-red-500 px-2 py-1 rounded-md text-center"
+            required
           />
           <button
             type="submit"
-            className="bg-red-600 text-white mt-4 py-1 rounded hover:bg-red-700 transition"
+            disabled={loading}
+            className="bg-red-600 text-white mt-4 py-1 rounded hover:bg-red-700 transition disabled:opacity-50"
           >
-            INGRESAR
+            {loading ? "Ingresando..." : "INGRESAR"}
           </button>
         </form>
 

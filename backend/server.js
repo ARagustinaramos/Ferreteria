@@ -12,7 +12,7 @@ import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 const app = express();
-
+ 
 // Middlewares
 app.use(cors());
 app.use(express.json());

@@ -19,10 +19,15 @@ export const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log("✅ Conexión a PostgreSQL establecida correctamente.");
-    await sequelize.sync();
-    console.log("🗂️  Modelos sincronizados con la base de datos.");
+
+    // ⚡️ Sincronizar sin bloquear: no usar alter ni force
+    sequelize.sync()
+      .then(() => console.log("🗂️ Modelos sincronizados con la base de datos."))
+      .catch(err => console.error("❌ Error en sync:", err));
+      
   } catch (error) {
     console.error("❌ Error al conectar a la base de datos:", error);
     throw error;
   }
 };
+

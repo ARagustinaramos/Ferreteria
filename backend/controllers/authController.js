@@ -17,15 +17,12 @@ export const register = async (req, res) => {
     }
 
   
-
-    // 👇 Validaciones específicas
     if (role !== "admin" && !listNumber) {
       return res
         .status(400)
         .json({ message: "El número de lista es obligatorio para usuarios no admin" });
     }
 
-    // 👇 Preparamos los datos según el tipo de usuario
     const userData = {
       name,
       email,

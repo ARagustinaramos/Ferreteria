@@ -15,7 +15,7 @@ export const File = sequelize.define(
     },
     fileType: {
       type: DataTypes.STRING,
-      allowNull: false, // pdf / excel
+      allowNull: false, 
     },
     filePath: {
       type: DataTypes.STRING,
@@ -23,11 +23,16 @@ export const File = sequelize.define(
     },
     listNumber: {
       type: DataTypes.INTEGER,
+      allowNull: true, 
+    },
+    category: {
+      type: DataTypes.ENUM("lista", "ofertas", "maquinas"),
       allowNull: false,
+      defaultValue: "lista", 
     },
   },
   {
     tableName: "Files",
-    timestamps: false, // Desactiva createdAt/updatedAt automáticos
+    timestamps: false,
   }
 );

@@ -27,6 +27,6 @@ export const PriceList = sequelize.define(
   },
   {
     tableName: "PriceLists",
-    timestamps: false, // Desactiva createdAt/updatedAt automáticos
+    timestamps: false, 
   }
 );

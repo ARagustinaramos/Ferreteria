@@ -1,146 +1,177 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UserModal({ user, onClose, onUserChange }) {
-  const [form, setForm] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    password: "",
-    listNumber: user?.listNumber || "",
-    role: user?.role || "cliente", 
-  });
+  const { token } = useAuth();
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState(user?.role || "client");
+  const [listNumber, setListNumber] = useState(user?.listNumber || "");
+  const [priceLists, setPriceLists] = useState([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    let mounted = true;
+
+    async function fetchPriceLists() {
+      try {
+        setLoadingLists(true);
+        const res = await axios.get("http://localhost:3001/admin/pricelists", {
+          headers: { Authorization: `Bearer ${token}` },
+          signal,
+        });
+
+        if (mounted) {
+          setPriceLists(res.data);
+          setError("");
+        }
+      } catch (err) {
+        if (!axios.isCancel(err)) {
+          console.error("Error al obtener listas de precios:", err);
+          if (mounted) setError("No se pudieron cargar las listas de precios.");
+        }
+      } finally {
+        if (mounted) setLoadingLists(false);
+      }
+    }
+
+    fetchPriceLists();
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
+  }, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       if (user) {
-        // Actualiza lista si es cliente
-        if (form.role === "cliente") {
-          await axios.put(
-            `http://localhost:3001/admin/user/${user.id_User}/list`,
-            { listNumber: form.listNumber }
-          );
-        }
+        await axios.put(
+          `http://localhost:3001/admin/user/${user.id_User}/list`,
+          { name, email, role, listNumber, password },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
       } else {
-        // Crea usuario nuevo
-        await axios.post("http://localhost:3001/admin/user", form);
+        await axios.post(
+          "http://localhost:3001/admin/user",
+          { name, email, password, role, listNumber },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
       }
 
       onUserChange();
       onClose();
-    } catch (error) {
-      console.error(error);
-      alert("Error al guardar el usuario");
+    } catch (err) {
+      console.error("Error al guardar usuario:", err);
+      setError("Error al guardar el usuario.");
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-[400px] p-6 relative">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">
-          {user ? "Modificar Usuario" : "Agregar Usuario"}
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h2 className="text-lg font-bold mb-4">
+          {user ? "Editar usuario" : "Agregar nuevo usuario"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Nombre
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              disabled={!!user}
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-300"
-              required
-            />
+        {error && (
+          <div className="mb-3 text-sm text-red-600 bg-red-50 p-2 rounded">
+            {error}
           </div>
+        )}
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              disabled={!!user}
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-300"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="border rounded px-3 py-2"
+          />
 
-          {/* Contraseña (solo al crear) */}
+          <input
+            type="email"
+            placeholder="Correo electrónico"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border rounded px-3 py-2"
+          />
+
           {!user && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-300"
-                required
-              />
-            </div>
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="border rounded px-3 py-2"
+            />
           )}
 
-          {/* Rol */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Rol
-            </label>
+          {user && (
+            <input
+              type="password"
+              placeholder="Nueva contraseña (opcional)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border rounded px-3 py-2"
+            />
+          )}
+
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="client">Cliente</option>
+            <option value="admin">Administrador</option>
+          </select>
+
+          {role === "client" && (
             <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-300"
+              value={listNumber}
+              onChange={(e) => setListNumber(e.target.value)}
+              className="border rounded px-3 py-2"
+              required
             >
-              <option value="cliente">Cliente</option>
-              <option value="admin">Administrador</option>
+              <option value="">Seleccione una lista</option>
+              {loadingLists ? (
+                <option>Cargando...</option>
+              ) : (
+                priceLists.map((list, index) => (
+                  <option
+                    key={`${list.listNumber}-${list.name || index}`}
+                    value={list.listNumber}
+                  >
+                    Lista {list.listNumber} - {list.name}
+                  </option>
+                ))
+              )}
             </select>
-          </div>
-
-          {/* Lista de precios (solo si es cliente) */}
-          {form.role === "cliente" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Lista de precios
-              </label>
-              <input
-                type="number"
-                name="listNumber"
-                value={form.listNumber}
-                onChange={handleChange}
-                className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-300"
-              />
-            </div>
           )}
-
-          <div className="flex justify-end space-x-2 mt-6">
+          <div className="flex justify-end gap-3 mt-4">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
             >
-              {user ? "Guardar cambios" : "Agregar"}
+              {user ? "Guardar cambios" : "Crear usuario"}
             </button>
           </div>
         </form>

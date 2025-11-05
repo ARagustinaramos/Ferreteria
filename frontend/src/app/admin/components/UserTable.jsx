@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import axios from "axios";
 import { Button } from "@mui/material";
@@ -16,34 +16,54 @@ export default function UserTable() {
   const [reload, setReload] = useState(false);
   const { token } = useAuth();
 
-  // 🔁 Refrescar lista de usuarios
-  const handleUserChange = () => setReload(!reload);
+  const isMounted = useRef(false);
 
-  // 🧭 Obtener usuarios
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const handleUserChange = () => setReload((prev) => !prev);
+
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const res = await axios.get("http://localhost:3001/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = Array.isArray(res.data) ? res.data : res.data?.users || [];
-      setUsers(data);
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.users || [];
+
+      if (isMounted.current) {
+        setUsers(data);
+        setError("");
+      }
+
       if (process.env.NODE_ENV !== "production") {
-        // Debug mínimo para confirmar datos en cliente
         console.log("Usuarios recibidos:", data.length);
       }
-      setError("");
     } catch (err) {
       console.error("Error al obtener usuarios:", err);
-      const status = err?.response?.status;
-      if (status === 401) setError("No autenticado. Iniciá sesión nuevamente.");
-      else if (status === 403) setError("Acceso restringido. Se requiere rol administrador.");
-      else setError("No se pudieron cargar los usuarios.");
+      if (isMounted.current) {
+        const status = err?.response?.status;
+        if (status === 401)
+          setError("No autenticado. Iniciá sesión nuevamente.");
+        else if (status === 403)
+          setError("Acceso restringido. Se requiere rol administrador.");
+        else setError("No se pudieron cargar los usuarios.");
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
   };
 
-  // 🧩 Alternar estado activo/inactivo
+  useEffect(() => {
+    if (token) fetchUsers();
+  }, [reload, token]);
+
   const toggleActive = async (id) => {
     try {
       await axios.put(
@@ -51,18 +71,12 @@ export default function UserTable() {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchUsers();
+      if (isMounted.current) handleUserChange();
     } catch (error) {
       console.error(error);
     }
   };
 
-  // 🕓 Cargar usuarios al montar y cuando cambia reload
-  useEffect(() => {
-    if (token) fetchUsers();
-  }, [reload, token]);
-
-  // 📊 Columnas de la tabla
   const columns = [
     { field: "name", headerName: "Nombre", flex: 1 },
     { field: "email", headerName: "Email", flex: 1.5 },
@@ -115,12 +129,16 @@ export default function UserTable() {
     },
   ];
 
+  if (!isMounted.current) return null; 
+
   return (
     <div className="w-full p-4">
       {error && (
-        <div className="mb-4 p-3 rounded bg-red-50 text-red-700 text-sm">{error}</div>
+        <div className="mb-4 p-3 rounded bg-red-50 text-red-700 text-sm">
+          {error}
+        </div>
       )}
-      {/* 🔘 Botón para agregar usuario */}
+
       <div className="flex justify-end mb-4">
         <button
           onClick={() => {
@@ -133,7 +151,6 @@ export default function UserTable() {
         </button>
       </div>
 
-      {/* 🧮 Tabla de usuarios */}
       <div className="bg-white shadow rounded-lg p-2" style={{ height: 500 }}>
         <DataGrid
           rows={users}
@@ -148,12 +165,14 @@ export default function UserTable() {
           }}
         />
       </div>
+
       {!loading && !error && users.length === 0 && (
-        <div className="text-sm text-gray-500 mt-3">No hay usuarios para mostrar.</div>
+        <div className="text-sm text-gray-500 mt-3">
+          No hay usuarios para mostrar.
+        </div>
       )}
 
-      {/* 🪟 Modal para agregar/editar */}
-      {showModal && (
+      {showModal && isMounted.current && (
         <UserModal
           user={selectedUser}
           onClose={() => setShowModal(false)}

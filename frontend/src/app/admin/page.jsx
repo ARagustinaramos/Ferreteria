@@ -1,5 +1,6 @@
 "use client";
 import UserTable from "./components/UserTable";
+import PriceListsPanel from "./components/PriceListsPanel";
 
 export default function UsersPage() {
   return (
@@ -8,6 +9,7 @@ export default function UsersPage() {
         Gestión de Usuarios
       </h1>
       <UserTable />
+      <PriceListsPanel />
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { DataTypes } from "sequelize";
-import bcrypt from "bcryptjs";
 import { sequelize } from "../config/db.js";
 
 export const User = sequelize.define("User", {
@@ -11,12 +10,6 @@ export const User = sequelize.define("User", {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    validate: { isEmail: true },
   },
   password: {
     type: DataTypes.STRING,
@@ -34,8 +27,4 @@ export const User = sequelize.define("User", {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
-});
-
-User.beforeCreate(async (user) => {
-  user.password = await bcrypt.hash(user.password, 10);
 });

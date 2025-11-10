@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { User } from "../models/User.js";
@@ -8,39 +7,32 @@ dotenv.config();
 // Registro
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role = "client", listNumber } = req.body;
+    const { name, password, role = "client", listNumber } = req.body;
 
-    // Verifica si ya existe el usuario
-    const existing = await User.findOne({ where: { email } });
+    const existing = await User.findOne({ where: { name } });
     if (existing) {
       return res.status(400).json({ message: "El usuario ya existe" });
     }
 
-  
     if (role !== "admin" && !listNumber) {
-      return res
-        .status(400)
-        .json({ message: "El número de lista es obligatorio para usuarios no admin" });
+      return res.status(400).json({
+        message: "El número de lista es obligatorio para usuarios no admin",
+      });
     }
 
-    const userData = {
+    const newUser = await User.create({
       name,
-      email,
       password,
       role,
       active: true,
-      listNumber: role === "admin" ? null : listNumber, // Solo null si es admin
-    };
-
-    // Crea el usuario
-    const newUser = await User.create(userData);
+      listNumber: role === "admin" ? null : listNumber,
+    });
 
     res.status(201).json({
       message: "Usuario registrado correctamente",
       user: {
         id: newUser.id_User,
         name: newUser.name,
-        email: newUser.email,
         role: newUser.role,
       },
     });
@@ -53,23 +45,16 @@ export const register = async (req, res) => {
 // Login
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, password } = req.body;
+    const user = await User.findOne({ where: { name } });
 
-    // Busca usuario
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
-
-    // Compara contraseñas
-    const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass) {
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+    if (password !== user.password) {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
 
-    // Crea token
     const token = jwt.sign(
-      { id: user.id_User, role: user.role, email: user.email },
+      { id: user.id_User, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
@@ -80,7 +65,6 @@ export const login = async (req, res) => {
       user: {
         id: user.id_User,
         name: user.name,
-        email: user.email,
         role: user.role,
       },
     });

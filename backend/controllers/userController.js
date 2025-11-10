@@ -6,7 +6,7 @@ export const getAllUsers = async (req, res) => {
       attributes: [
         "id_User",
         "name",
-        "email",
+        "password",
         "role",
         "listNumber",
         "active",

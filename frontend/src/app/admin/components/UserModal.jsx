@@ -5,43 +5,39 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function UserModal({ user, onClose, onUserChange }) {
   const { token } = useAuth();
+
   const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(user?.password || "");
   const [role, setRole] = useState(user?.role || "client");
   const [listNumber, setListNumber] = useState(user?.listNumber || "");
   const [priceLists, setPriceLists] = useState([]);
   const [loadingLists, setLoadingLists] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(true); // 👁️ Mostrar contraseña por defecto
 
   useEffect(() => {
-    const controller = new AbortController();
-    const signal = controller.signal;
     let mounted = true;
+    const controller = new AbortController();
 
-    async function fetchPriceLists() {
+    async function fetchLists() {
       try {
         setLoadingLists(true);
         const res = await axios.get("http://localhost:3001/admin/pricelists", {
           headers: { Authorization: `Bearer ${token}` },
-          signal,
+          signal: controller.signal,
         });
 
-        if (mounted) {
-          setPriceLists(res.data);
-          setError("");
-        }
+        if (mounted) setPriceLists(res.data);
       } catch (err) {
         if (!axios.isCancel(err)) {
-          console.error("Error al obtener listas de precios:", err);
-          if (mounted) setError("No se pudieron cargar las listas de precios.");
+          if (mounted) setError("No se pudieron cargar las listas.");
         }
       } finally {
         if (mounted) setLoadingLists(false);
       }
     }
 
-    fetchPriceLists();
+    fetchLists();
 
     return () => {
       mounted = false;
@@ -52,19 +48,19 @@ export default function UserModal({ user, onClose, onUserChange }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const payload = { name, password, role, listNumber };
+
     try {
       if (user) {
         await axios.put(
           `http://localhost:3001/admin/user/${user.id_User}/list`,
-          { name, email, role, listNumber, password },
+          payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        await axios.post(
-          "http://localhost:3001/admin/user",
-          { name, email, password, role, listNumber },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await axios.post("http://localhost:3001/admin/user", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
 
       onUserChange();
@@ -89,44 +85,34 @@ export default function UserModal({ user, onClose, onUserChange }) {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {/* ✅ nombre y apellido en un solo campo */}
           <input
             type="text"
-            placeholder="Nombre"
+            placeholder="Nombre y apellido"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             className="border rounded px-3 py-2"
           />
 
-          <input
-            type="email"
-            placeholder="Correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="border rounded px-3 py-2"
-          />
-
-          {!user && (
+          {/* ✅ contraseña visible con botón para mostrar/ocultar */}
+          <div className="relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border rounded px-3 py-2"
+              required={!user}
+              className="border rounded px-3 py-2 w-full"
             />
-          )}
-
-          {user && (
-            <input
-              type="password"
-              placeholder="Nueva contraseña (opcional)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border rounded px-3 py-2"
-            />
-          )}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm"
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
+          </div>
 
           <select
             value={role}
@@ -150,7 +136,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
               ) : (
                 priceLists.map((list, index) => (
                   <option
-                    key={`${list.listNumber}-${list.name || index}`}
+                    key={`${list.listNumber}-${index}`}
                     value={list.listNumber}
                   >
                     Lista {list.listNumber} - {list.name}
@@ -159,6 +145,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
               )}
             </select>
           )}
+
           <div className="flex justify-end gap-3 mt-4">
             <button
               type="button"

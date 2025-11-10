@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 
 export default function Page() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +17,7 @@ export default function Page() {
       const res = await fetch("http://localhost:3001/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, password }),
       });
 
       const data = await res.json();
@@ -25,7 +26,7 @@ export default function Page() {
         throw new Error(data.message || "Usuario o contraseña incorrectos");
       }
 
-      // Guardamos token opcionalmente
+      // Guardar token
       localStorage.setItem("token", data.token);
 
       // Redirección según el rol
@@ -61,24 +62,25 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Formulario de login real */}
+        {/* Formulario de login */}
         <form onSubmit={handleLogin} className="flex flex-col mt-6 space-y-2">
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border border-red-500 px-2 py-1 rounded-md text-center"
+            type="text"
+            placeholder="Nombre y apellido"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
+            className="border border-red-500 px-2 py-1 rounded-md text-center"
           />
           <input
             type="password"
             placeholder="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="border border-red-500 px-2 py-1 rounded-md text-center"
             required
+            className="border border-red-500 px-2 py-1 rounded-md text-center"
           />
+
           <button
             type="submit"
             disabled={loading}

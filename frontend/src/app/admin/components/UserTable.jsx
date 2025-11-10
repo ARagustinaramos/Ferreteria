@@ -78,29 +78,28 @@ export default function UserTable() {
   };
 
   const columns = [
-    { field: "name", headerName: "Nombre", flex: 1 },
-    { field: "email", headerName: "Email", flex: 1.5 },
-    { field: "listNumber", headerName: "Lista de Precios", flex: 0.7 },
+    { field: "name", headerName: "Nombre completo", flex: 1 },
+    { field: "listNumber", headerName: "Lista de Precios", flex: 0.5 },
+  
     {
       field: "active",
       headerName: "Estado",
-      flex: 0.6,
+      flex: 0.5,
       renderCell: (params) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            params.row.active
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+            params.row.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
           }`}
         >
           {params.row.active ? "Activo" : "Inactivo"}
         </span>
       ),
     },
+  
     {
       field: "acciones",
       headerName: "Acciones",
-      flex: 1,
+      flex: 0.7,
       sortable: false,
       renderCell: (params) => (
         <div className="flex gap-2">
@@ -115,7 +114,7 @@ export default function UserTable() {
           >
             Editar
           </Button>
-
+  
           <Button
             variant="contained"
             size="small"
@@ -128,7 +127,7 @@ export default function UserTable() {
       ),
     },
   ];
-
+  
   if (!isMounted.current) return null; 
 
   return (

@@ -13,7 +13,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
   const [priceLists, setPriceLists] = useState([]);
   const [loadingLists, setLoadingLists] = useState(false);
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(true); // 👁️ Mostrar contraseña por defecto
+  const [showPassword, setShowPassword] = useState(false); 
 
   useEffect(() => {
     let mounted = true;
@@ -110,7 +110,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm"
             >
-              {showPassword ? "🙈" : "👁️"}
+              {showPassword ? "👁️" : "🙈"}
             </button>
           </div>
 

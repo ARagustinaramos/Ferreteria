@@ -33,9 +33,7 @@ export default function UserTable() {
       const res = await axios.get("http://localhost:3001/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data?.users || [];
+      const data = Array.isArray(res.data) ? res.data : res.data?.users || [];
 
       if (isMounted.current) {
         setUsers(data);
@@ -64,23 +62,36 @@ export default function UserTable() {
     if (token) fetchUsers();
   }, [reload, token]);
 
-  const toggleActive = async (id) => {
+  const toggleActive = async (id, active) => {
+    if (
+      active &&
+      !window.confirm("¿Seguro que querés desactivar este usuario?")
+    )
+      return;
+
     try {
-      await axios.put(
+      const res = await axios.put(
         `http://localhost:3001/admin/user/${id}/toggle`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (isMounted.current) handleUserChange();
+
+      const updatedUser = res.data.user;
+      alert(res.data.message);
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id_User === updatedUser.id_User ? updatedUser : u))
+      );
     } catch (error) {
-      console.error(error);
+      console.error("Error al cambiar el estado del usuario:", error);
+      alert("No se pudo cambiar el estado del usuario.");
     }
   };
 
   const columns = [
     { field: "name", headerName: "Nombre completo", flex: 1 },
     { field: "listNumber", headerName: "Lista de Precios", flex: 0.5 },
-  
+
     {
       field: "active",
       headerName: "Estado",
@@ -88,14 +99,16 @@ export default function UserTable() {
       renderCell: (params) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            params.row.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            params.row.active
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
           }`}
         >
           {params.row.active ? "Activo" : "Inactivo"}
         </span>
       ),
     },
-  
+
     {
       field: "acciones",
       headerName: "Acciones",
@@ -114,12 +127,12 @@ export default function UserTable() {
           >
             Editar
           </Button>
-  
+
           <Button
             variant="contained"
             size="small"
             color={params.row.active ? "error" : "success"}
-            onClick={() => toggleActive(params.row.id_User)}
+            onClick={() => toggleActive(params.row.id_User, params.row.active)}
           >
             {params.row.active ? "Desactivar" : "Activar"}
           </Button>
@@ -127,8 +140,8 @@ export default function UserTable() {
       ),
     },
   ];
-  
-  if (!isMounted.current) return null; 
+
+  if (!isMounted.current) return null;
 
   return (
     <div className="w-full p-4">
@@ -138,13 +151,39 @@ export default function UserTable() {
         </div>
       )}
 
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-3 mb-4">
+        <button
+          onClick={async () => {
+            try {
+              const res = await axios.put(
+                "http://localhost:3001/admin/users/toggleAll",
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              alert(res.data.message);
+              handleUserChange();
+            } catch (error) {
+              console.error("Error al cambiar estado global:", error);
+              alert("Error al cambiar estado global de usuarios.");
+            }
+          }}
+          className={`px-4 py-2 rounded-md text-white transition ${
+            users.every((u) => !u.active || u.role === "admin")
+              ? "bg-green-600 hover:bg-green-700" // todos inactivos → activar
+              : "bg-red-600 hover:bg-red-700" // hay activos → desactivar
+          }`}
+        >
+          {users.every((u) => !u.active || u.role === "admin")
+            ? "Activar todos"
+            : "Desactivar todos"}
+        </button>
+
         <button
           onClick={() => {
             setSelectedUser(null);
             setShowModal(true);
           }}
-          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
+          className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition"
         >
           Agregar usuario
         </button>

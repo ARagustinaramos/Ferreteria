@@ -22,13 +22,11 @@ export const uploadFile = async (req, res) => {
       return res.status(400).json({ message: "Falta el campo fileType" });
     }
 
-  
     const validCategories = ["lista", "ofertas", "maquinas"];
     const finalCategory = validCategories.includes(category)
       ? category
       : "lista";
 
-   
     const file = await File.create({
       fileName: req.file.filename,
       filePath: req.file.path,
@@ -60,14 +58,11 @@ export const getVisibleFiles = async (req, res) => {
   try {
     const { userId } = req.params;
 
-  
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
-    
     const files = await File.findAll({
       where: {
-        
         [File.sequelize.Op.or]: [
           { listNumber: user.listNumber },
           { category: "ofertas" },
@@ -80,5 +75,21 @@ export const getVisibleFiles = async (req, res) => {
   } catch (error) {
     console.error("Error al obtener archivos visibles:", error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+
+export const getAllFiles = async (req, res) => {
+  try {
+    
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ message: "Acceso denegado: solo administradores" });
+    }
+
+    const files = await File.findAll();
+    res.json(files);
+  } catch (error) {
+    console.error("Error al obtener todos los archivos:", error);
+    res.status(500).json({ message: "Error al obtener archivos" });
   }
 };

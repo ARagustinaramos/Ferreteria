@@ -4,7 +4,6 @@ import { User } from "../models/User.js";
 
 dotenv.config();
 
-// Registro
 export const register = async (req, res) => {
   try {
     const { name, password, role = "client", listNumber } = req.body;
@@ -48,7 +47,17 @@ export const login = async (req, res) => {
     const { name, password } = req.body;
     const user = await User.findOne({ where: { name } });
 
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+    if (!user)
+      return res.status(404).json({ message: "Usuario no encontrado" });
+
+    // 🚫 Verificar si el usuario está inactivo
+    if (!user.active) {
+      return res
+        .status(403)
+        .json({ message: "Tu cuenta está desactivada. Contactá al administrador." });
+    }
+
+    
     if (password !== user.password) {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }

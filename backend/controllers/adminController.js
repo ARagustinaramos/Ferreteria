@@ -49,16 +49,70 @@ export const toggleUserActive = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findByPk(id);
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    // Cambia el estado actual
     user.active = !user.active;
     await user.save();
-    res.json(user);
+
+    const message = user.active
+      ? "Usuario activado correctamente"
+      : "Usuario desactivado correctamente";
+
+    res.json({
+      message,
+      user: {
+        id_User: user.id_User,
+        name: user.name,
+        role: user.role,
+        listNumber: user.listNumber,
+        active: user.active,
+        password: user.password, 
+      },
+    });
   } catch (error) {
     console.error("Error al cambiar estado del usuario:", error);
+    res.status(500).json({
+      message: "Error interno del servidor",
+      error: error.message,
+    });
+  }
+};
+
+export const toggleAllClients = async (req, res) => {
+  try {
+    // Buscar todos los clientes
+    const clients = await User.findAll({ where: { role: "client" } });
+
+    if (clients.length === 0) {
+      return res.status(404).json({ message: "No hay usuarios cliente para actualizar." });
+    }
+
+    // Ver si todos están activos
+    const allActive = clients.every((user) => user.active);
+
+    // Si todos están activos → desactivar todos, si no → activar todos
+    await User.update(
+      { active: !allActive },
+      { where: { role: "client" } }
+    );
+
+    res.json({
+      message: allActive
+        ? "Todos los usuarios fueron desactivados."
+        : "Todos los usuarios fueron activados.",
+      newState: !allActive,
+    });
+  } catch (error) {
+    console.error("Error al alternar estado de los usuarios:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 export const getPriceLists = async (req, res) => {
   try {

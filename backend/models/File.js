@@ -15,21 +15,24 @@ export const File = sequelize.define(
     },
     fileType: {
       type: DataTypes.STRING,
-      allowNull: false, 
-    },
-    filePath: {
-      type: DataTypes.STRING,
       allowNull: false,
+    },
+    fileUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    publicId: {
+      type: DataTypes.STRING,
+      allowNull: true, 
     },
     listNumber: {
       type: DataTypes.INTEGER,
-      allowNull: true, 
+      allowNull: true,
     },
     category: {
-      type: DataTypes.ENUM("lista", "ofertas", "maquinas"),
+      type: DataTypes.ENUM("listas-pdf", "listas-excel", "ofertas", "maquinas"),
       allowNull: false,
-      defaultValue: "lista", 
-    },
+    },    
   },
   {
     tableName: "Files",

@@ -5,11 +5,10 @@ import bcrypt from "bcryptjs";
 export const createUser = async (req, res) => {
   try {
     const { name, password, role, listNumber } = req.body;
-    const hashed = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
-      password: hashed,
+      password,  
       role,
       listNumber: role === "client" ? listNumber : null,
     });
@@ -20,6 +19,7 @@ export const createUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 export const updateUserList = async (req, res) => {
   try {
@@ -34,9 +34,9 @@ export const updateUserList = async (req, res) => {
     user.listNumber = role === "client" ? listNumber : null;
 
     if (password && password.trim() !== "") {
-      user.password = await bcrypt.hash(password, 10);
+      user.password = password; 
     }
-
+    
     await user.save();
     res.json({ message: "Usuario actualizado correctamente", user });
   } catch (error) {
@@ -117,15 +117,14 @@ export const toggleAllClients = async (req, res) => {
 export const getPriceLists = async (req, res) => {
   try {
     const files = await File.findAll({
-      where: { category: "lista" },
-      attributes: ["listNumber", "fileName"],
-      group: ["listNumber", "fileName"],
+      where: { category: ["listas-pdf", "listas-excel"] },
+      attributes: ["listNumber"],
+      group: ["listNumber"],
       order: [["listNumber", "ASC"]],
     });
 
     const priceLists = files.map((file) => ({
       listNumber: file.listNumber,
-      name: file.fileName,
     }));
 
     res.json(priceLists);
@@ -134,3 +133,4 @@ export const getPriceLists = async (req, res) => {
     res.status(500).json({ message: "Error al obtener listas de precios" });
   }
 };
+

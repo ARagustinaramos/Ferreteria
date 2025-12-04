@@ -33,6 +33,7 @@ export const register = async (req, res) => {
         id: newUser.id_User,
         name: newUser.name,
         role: newUser.role,
+        listNumber: newUser.listNumber,
       },
     });
   } catch (error) {
@@ -63,10 +64,16 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id_User, role: user.role, name: user.name },
+      { 
+        id: user.id_User, 
+        role: user.role, 
+        name: user.name, 
+        listNumber: user.listNumber 
+      },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
+    
 
     res.status(200).json({
       message: "Inicio de sesión exitoso",
@@ -75,6 +82,7 @@ export const login = async (req, res) => {
         id: user.id_User,
         name: user.name,
         role: user.role,
+        listNumber: user.listNumber,
       },
     });
   } catch (error) {

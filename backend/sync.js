@@ -39,14 +39,14 @@ const initializeDatabase = async () => {
     console.log("✅ Usuarios iniciales creados.");
 
     // Crear archivos ejemplo
-    const files = [
-      { fileName: "lista1.pdf", fileType: "pdf", filePath: "uploads/lista1.pdf", listNumber: 1 },
-      { fileName: "lista2.pdf", fileType: "pdf", filePath: "uploads/lista2.pdf", listNumber: 2 },
-      { fileName: "lista3.pdf", fileType: "pdf", filePath: "uploads/lista3.pdf", listNumber: 3 },
-      { fileName: "catalogo.xlsx", fileType: "excel", filePath: "uploads/catalogo.xlsx", listNumber: 1 },
-    ];
-    await File.bulkCreate(files);
-    console.log("✅ Archivos de ejemplo agregados.");
+    //const files = [
+     // { fileName: "lista1.pdf", fileType: "pdf", filePath: "uploads/lista1.pdf", listNumber: 1, category: "listas-pdf"},
+     // { fileName: "lista2.pdf", fileType: "pdf", filePath: "uploads/lista2.pdf", listNumber: 2, category: "listas-pdf" },
+      //{ fileName: "lista3.pdf", fileType: "pdf", filePath: "uploads/lista3.pdf", listNumber: 3, category: "listas-pdf" },
+     // { fileName: "catalogo.xlsx", fileType: "excel", filePath: "uploads/catalogo.xlsx", listNumber: 1, category: "listas-ex" },
+   // ];
+   // await File.bulkCreate(files);
+   // console.log("✅ Archivos de ejemplo agregados.");
 
     console.log("🌱 Base de datos lista para usar.");
     process.exit(0);

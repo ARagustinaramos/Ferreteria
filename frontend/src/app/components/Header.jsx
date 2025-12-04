@@ -1,34 +1,51 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
-export default function Header({ username }) {
-  const [greeting, setGreeting] = useState("BIENVENIDOS !!");
+export default function Header() {
+  const { logout, user, loading } = useAuth();
+  if (loading) return null;
 
-  useEffect(() => {
-    if (username) {
-      setGreeting(`HOLA ${username.toUpperCase()} ...`);
-    }
-  }, [username]);
+  const username =
+    user?.name || user?.username || user?.email?.split("@")[0];
 
   return (
-    <header className="relative bg-emerald-800 text-white h-28 flex items-center justify-center shadow-md">
-      {/* Fondo verde */}
-      <h1 className="text-xl font-bold tracking-wide">{greeting}</h1>
+    <header className="w-full bg-gradient-to-r from-[#003f2f] via-[#058f6b] to-[#8fff9b] shadow-lg border-b border-white/10">
+      <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
+        
+        {/* LOGO */}
+        <div className="flex items-center gap-3">
+          <div className="w-20 h-20 rounded-full bg-white shadow-xl overflow-hidden ring-4 ring-white/40">
+            <Image
+              src="/dhm.png"
+              alt="Logo DHM"
+              width={80}
+              height={80}
+              className="object-cover w-full h-full"
+            />
+          </div>
 
-      {/* Imagen circular superpuesta */}
-      <div className="absolute -bottom-8 left-10 w-24 h-24 rounded-full border-4 border-emerald-800 overflow-hidden shadow-lg">
-        <Image
-          src="/logo_dhm.png" // <-- tu imagen circular (ej. el logo de DHM)
-          alt="Logo DHM"
-          width={100}
-          height={100}
-          className="object-cover"
-        />
+          <h1 className="text-xl sm:text-2xl font-semibold text-white tracking-tight drop-shadow-md">
+            Distribuidora DHM
+          </h1>
+        </div>
+
+        {/* SALUDO / LOGIN */}
+        <div className="flex items-center gap-4">
+          <span className="hidden sm:block text-white text-xl font-medium">
+            {user ? `Hola ${username}` : "Bienvenidos"}
+          </span>
+
+          {user && (
+            <button
+              onClick={logout}
+              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium backdrop-blur-md border border-white/30 shadow-md transition-all"
+            >
+              Cerrar sesión
+            </button>
+          )}
+        </div>
       </div>
-
-      {/* Imagen decorativa detrás (opcional, como el recorte verde) */}
-      <div className="absolute top-0 left-0 w-24 h-28 bg-emerald-800 clip-path-triangle"></div>
     </header>
   );
 }

@@ -1,63 +1,51 @@
 "use client";
-import { createContext, useState, useContext, useEffect } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
+
+import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  // Cargar usuario guardado (por ejemplo, tras refrescar la página)
+  // Cargar usuario desde localStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-    if (storedUser) setUser(JSON.parse(storedUser));
-    if (storedToken) setToken(storedToken);
+    const savedUser = localStorage.getItem("user");
+    const savedToken = localStorage.getItem("token");
+
+    if (savedUser && savedToken) {
+      setUser(JSON.parse(savedUser));
+      setToken(savedToken);
+    }
+
+    setLoading(false);
   }, []);
 
-  // Login
-  const login = async (email, password) => {
-    try {
-      const response = await axios.post("http://localhost:3001/auth/login", {
-        email,
-        password,
-      });
+  // LOGIN
+  const login = (user, token) => {
+    setUser(user);
+    setToken(token);
 
-      const { user: userResp, token: tokenResp } = response.data;
-      setUser(userResp);
-      setToken(tokenResp);
-      localStorage.setItem("user", JSON.stringify(userResp));
-      localStorage.setItem("token", tokenResp);
-
-      // Redirigir según el rol
-      if (userResp.role === "admin") {
-        router.push("/admin/users");
-      } else {
-        router.push("/cliente");
-      }
-    } catch (error) {
-      alert("Error al iniciar sesión. Verificá tus datos.");
-      console.error(error);
-    }
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("token", token);
   };
 
-  // Logout
+  // LOGOUT
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    router.push("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

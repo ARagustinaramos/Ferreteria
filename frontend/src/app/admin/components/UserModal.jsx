@@ -1,6 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/axiosConfig";
 import { useAuth } from "../../context/AuthContext";
 
 export default function UserModal({ user, onClose, onUserChange }) {
@@ -13,54 +14,49 @@ export default function UserModal({ user, onClose, onUserChange }) {
   const [priceLists, setPriceLists] = useState([]);
   const [loadingLists, setLoadingLists] = useState(false);
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false); 
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
     const controller = new AbortController();
-
-    async function fetchLists() {
+  
+    const fetchLists = async () => {
       try {
         setLoadingLists(true);
-        const res = await axios.get("http://localhost:3001/admin/pricelists", {
-          headers: { Authorization: `Bearer ${token}` },
+        setError(""); // 👉 LIMPIA EL ERROR ANTES DE HACER LA LLAMADA
+  
+        const res = await api.get("/admin/pricelists", {
           signal: controller.signal,
         });
-
-        if (mounted) setPriceLists(res.data);
-      } catch (err) {
-        if (!axios.isCancel(err)) {
-          if (mounted) setError("No se pudieron cargar las listas.");
-        }
+  
+        setPriceLists(res.data);
+        setError(""); 
+      } catch {
+        setError("No se pudieron cargar las listas.");
       } finally {
-        if (mounted) setLoadingLists(false);
+        setLoadingLists(false);
       }
-    }
-
-    fetchLists();
-
-    return () => {
-      mounted = false;
-      controller.abort();
     };
-  }, [token]);
+  
+    fetchLists();
+    return () => controller.abort();
+  }, []);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = { name, password, role, listNumber };
+    const payload = {
+      name,
+      password: password || undefined, // solo se envía si se escribe algo
+      role,
+      listNumber,
+    };
 
     try {
       if (user) {
-        await axios.put(
-          `http://localhost:3001/admin/user/${user.id_User}/list`,
-          payload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.put(`/admin/user/${user.id_User}/list`, payload);
       } else {
-        await axios.post("http://localhost:3001/admin/user", payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post("/admin/user", payload);
       }
 
       onUserChange();
@@ -85,7 +81,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          {/* ✅ nombre y apellido en un solo campo */}
+          {/* Nombre */}
           <input
             type="text"
             placeholder="Nombre y apellido"
@@ -95,11 +91,11 @@ export default function UserModal({ user, onClose, onUserChange }) {
             className="border rounded px-3 py-2"
           />
 
-          {/* ✅ contraseña visible con botón para mostrar/ocultar */}
+          {/* Contraseña */}
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Contraseña"
+              placeholder={user ? "Nueva contraseña (opcional)" : "Contraseña"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required={!user}
@@ -114,6 +110,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
             </button>
           </div>
 
+          {/* Rol */}
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
@@ -123,6 +120,7 @@ export default function UserModal({ user, onClose, onUserChange }) {
             <option value="admin">Administrador</option>
           </select>
 
+          {/* Selección de lista si es cliente */}
           {role === "client" && (
             <select
               value={listNumber}
@@ -131,21 +129,21 @@ export default function UserModal({ user, onClose, onUserChange }) {
               required
             >
               <option value="">Seleccione una lista</option>
+
               {loadingLists ? (
                 <option>Cargando...</option>
               ) : (
-                priceLists.map((list, index) => (
-                  <option
-                    key={`${list.listNumber}-${index}`}
-                    value={list.listNumber}
-                  >
-                    Lista {list.listNumber} - {list.name}
+                priceLists.map((list) => (
+                  <option key={list.listNumber} value={list.listNumber}>
+
+                    Lista {list.listNumber}
                   </option>
                 ))
               )}
             </select>
           )}
 
+          {/* Botones */}
           <div className="flex justify-end gap-3 mt-4">
             <button
               type="button"

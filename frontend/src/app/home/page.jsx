@@ -1,13 +1,26 @@
 "use client";
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext"; // asegurate que esta ruta sea correcta
 
-export default function HomePage() {
-  const { user, token } = useAuth();
+console.log("🚨🚨🚨 CLIENT DASHBOARD CARGÓ 🚨🚨🚨");
+
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import { Wrench, Percent, FileArchive, FileSpreadsheet } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+export default function ClientDashboard() {
+  const { user, loading } = useAuth();
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const router = useRouter();
+
+  console.log("👉 USER EN DASHBOARD:", user);
+
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/");
+    }
+  }, [loading, user, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -15,133 +28,102 @@ export default function HomePage() {
     const fetchFiles = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3001/files/visible/${user.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          `http://localhost:3001/files/visible/${user.id}`
         );
+
+        console.log("📂 ARCHIVOS RECIBIDOS DEL BACKEND:", res.data);
         setFiles(res.data);
-      } catch (err) {
-        console.error("Error al obtener archivos visibles:", err);
-        setError("No se pudieron cargar las listas de precios.");
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.error("❌ Error cargando archivos:", error);
       }
     };
 
     fetchFiles();
-  }, [user, token]);
+  }, [user]);
 
-  if (loading)
+  if (loading || (!user && loading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-700">
-        Cargando tus listas...
+      <div className="min-h-screen flex items-center justify-center text-gray-600 bg-white/80">
+        Cargando...
       </div>
     );
+  }
+  if (!user) return null;
 
-  if (error)
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">
-        {error}
-      </div>
-    );
+  const iconForCategory = (category) => {
+    switch (category) {
+      case "maquinas":
+        return Wrench;
+      case "ofertas":
+        return Percent;
+      case "listas-excel":
+        return FileSpreadsheet;
+      case "listas-pdf":
+      default:
+        return FileArchive;
+    }
+  };
 
-  const grouped = {
-    lista: files.filter((f) => f.category === "lista"),
-    ofertas: files.filter((f) => f.category === "ofertas"),
-    maquinas: files.filter((f) => f.category === "maquinas"),
+  const labelForCategory = (category) => {
+    switch (category) {
+      case "listas-pdf":
+        return "Lista de Precios (PDF)";
+      case "listas-excel":
+        return "Lista de Precios (Excel)";
+      case "ofertas":
+        return "Ofertas Especiales";
+      case "maquinas":
+        return "Catálogo Máquinas";
+      default:
+        return "Archivo";
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-100">
-      {/* Header */}
-      <header className="bg-emerald-800 text-white w-full text-center py-4 font-bold text-xl">
-        HOLA {user?.name?.toUpperCase()} 👋
-      </header>
+    <div className="min-h-screen flex flex-col items-center bg-white/80">
 
-      {/* Contenido principal */}
-      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
-        {/* 🧾 Lista de precios */}
-        {grouped.lista.length > 0 && (
-          <div className="flex flex-col items-center bg-white p-4 rounded-lg shadow">
-            <h2 className="font-semibold text-lg mb-3">Lista de Precios</h2>
-            {grouped.lista.map((file) => (
-              <button
-                key={file.id_File}
-                onClick={() =>
-                  window.open(`http://localhost:3001/${file.filePath}`, "_blank")
-                }
-                className={`flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50 transition ${
-                  file.fileType === "pdf" ? "text-red-600" : "text-green-600"
-                }`}
-              >
-                <img
-                  src={`/${
-                    file.fileType === "pdf" ? "pdf-icon.png" : "excel-icon.png"
-                  }`}
-                  alt={file.fileType}
-                  className="w-16 h-16 mb-2"
-                />
-                <p className="text-sm">
-                  Descargar {file.fileType.toUpperCase()}
-                </p>
-              </button>
-            ))}
-          </div>
+          <div className="mt-12 grid grid-cols-2 gap-10">
+
+        {files.length === 0 && (
+          <p className="text-gray-600 text-lg">No hay archivos para mostrar 😕</p>
         )}
 
-        {/* 💰 Ofertas */}
-        {grouped.ofertas.length > 0 && (
-          <div className="flex flex-col items-center bg-white p-4 rounded-lg shadow">
-            <h2 className="font-semibold text-lg mb-3">Ofertas</h2>
-            {grouped.ofertas.map((file) => (
-              <button
-                key={file.id_File}
-                onClick={() =>
-                  window.open(`http://localhost:3001/${file.filePath}`, "_blank")
-                }
-                className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50 transition text-red-600"
-              >
-                <img
-                  src="/pdf-icon.png"
-                  alt="ofertas"
-                  className="w-16 h-16 mb-2"
-                />
-                <p className="text-sm">Ver ofertas ({file.fileType.toUpperCase()})</p>
-              </button>
-            ))}
-          </div>
-        )}
+        {files.map((file) => {
+          const Icon = iconForCategory(file.category);
 
-        {/* ⚙️ Máquinas */}
-        {grouped.maquinas.length > 0 && (
-          <div className="flex flex-col items-center bg-white p-4 rounded-lg shadow md:col-span-2">
-            <h2 className="font-semibold text-lg mb-3">Catálogo de Máquinas</h2>
-            {grouped.maquinas.map((file) => (
-              <button
-                key={file.id_File}
-                onClick={() =>
-                  window.open(`http://localhost:3001/${file.filePath}`, "_blank")
-                }
-                className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50 transition text-red-600"
+          return (
+            <div
+              key={file.id_File}
+              className="flex flex-col items-center cursor-pointer"
+            >
+              <a
+                href={`http://localhost:3001/files/serve/${file.id_File}`}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <img
-                  src="/pdf-icon.png"
-                  alt="maquinas"
-                  className="w-16 h-16 mb-2"
-                />
-                <p className="text-sm">
-                  Ver catálogo ({file.fileType.toUpperCase()})
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
+                <div className="bg-white p-6 rounded-full shadow-md hover:scale-110 transition-transform flex items-center justify-center">
+                  <Icon size={72} className="text-red-600" />
+                </div>
+              </a>
+
+              <p className="text-sm mt-3 font-medium text-gray-700">
+                {labelForCategory(file.category)}
+              </p>
+
+              <a
+                href={`http://localhost:3001/files/serve/${file.id_File}?download=true`}
+                download
+                className="mt-2 bg-red-600 text-white text-xs px-4 py-1.5 rounded-md shadow hover:bg-red-700 transition"
+              >
+                Descargar
+              </a>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Footer */}
-      <footer className="mt-auto mb-4 text-center text-sm text-gray-800">
-        <p>📞 1E+09</p>
+      <footer className="mt-auto mb-6 text-center text-sm text-gray-700">
+        <p>📞 1135684589</p>
         <p>
           📧{" "}
           <a href="mailto:herrajes123@gmail.com" className="text-blue-600">
